@@ -1,10 +1,20 @@
 import numpy as np
 
+from common import players
 from generate_initial_data import generate_initial_data
 from models import Board, AIPlayer
+from tools import is_game_over
 from training_reinforcement_learning import train
 
 confirmation_answers = ('y', 'yes')
+
+
+def select_symbol(msg):
+    selected_symbol = input(msg)
+    if selected_symbol not in players:
+        return select_symbol("Selected symbol is not correct please select"
+                             "between X or O: ")
+    return selected_symbol
 
 
 def main():
@@ -24,11 +34,11 @@ def main():
     # Computer vs Human Games
     play_game = input("Do you want to play a game? ")
     while play_game in confirmation_answers:
-        select_symbol = input("Select your symbol (X/O): ")
+        human_symbol = select_symbol("Select your symbol (X/O): ")
+
         board = Board()
         game_status_flag = True
         computer = AIPlayer('X', state_values_for_ai_x, 0.1)
-        human_symbol = 'O'
         game_history = []
 
         print('\nLet the game begin\n')
@@ -61,8 +71,7 @@ def main():
         else:
             print("Draw")
 
-        print("Do you want to play another game(y/n)?")
-        ans = input()
+        play_game = input("Do you want to play another game(y/n)?")
 
 
 if __name__ == '__main__':
