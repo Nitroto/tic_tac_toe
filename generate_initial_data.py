@@ -1,6 +1,6 @@
 import numpy as np
 
-from common import n_states, n_actions, states_dict
+from common import n_states, states_dict
 from tools import get_winner
 
 
@@ -8,7 +8,6 @@ def generate_initial_data():
     # Initialize state values
     state_values_for_ai_o = np.full(n_states, 0.0)
     state_values_for_ai_x = np.full(n_states, 0.0)
-    print(f"n_states = {n_states} \nn_actions = {n_actions}")
     for i in range(n_states):
         winner = get_winner(states_dict[i])
         if winner == 'O':  # AI won

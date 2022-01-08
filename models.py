@@ -10,16 +10,24 @@ class Board:
     def __init__(self):
         self.state = copy.deepcopy(empty_board_state)
 
-    def play_move(self, player_symbol, block_num):
-        x_coordinate = (block_num - 1) % 3
-        y_coordinate = int((block_num - 1) / 3)
+    def play_move(self, player_symbol, cell_num):
+        row = int((cell_num - 1) / 3)
+        col = (cell_num - 1) % 3
 
-        if self.state[y_coordinate][x_coordinate] == ' ':
-            self.state[y_coordinate][x_coordinate] = player_symbol
+        if self.state[row][col] == ' ':
+            self.state[row][col] = player_symbol
             return
 
-        block_num = int(input("Block is not empty! Choose again: "))
-        self.play_move(player_symbol, block_num)
+        cell_num = int(input("Cell is not empty! Choose again: "))
+        self.play_move(player_symbol, cell_num)
+
+    def get_empty_cells(self):
+        flat_array = np.array(self.state).flatten()
+        empty_cells = []
+        for i in range(len(flat_array)):
+            if flat_array[i] == ' ':
+                empty_cells.append(i + 1)
+        return empty_cells
 
     def print(self):
         """ Displays board in proper format"""
@@ -36,36 +44,31 @@ class AIPlayer:
         self.state_values_for_ai = state_values_for_ai
         self.epsilon = epsilon
 
-    def get_empty_cells(self, board_state):
-        flat_array = np.array(board_state).flatten()
-        empty_cells = []
-        for i in range(len(flat_array)):
-            if flat_array[i] == ' ':
-                empty_cells.append(i + 1)
-        return empty_cells
-
-    def get_best_move(self, board_state):
+    def get_best_move(self, board):
         """ Reinforcement Learning Algorithm """
 
         moves = []
         curr_state_values = []
-        empty_cells = self.get_empty_cells(board_state)
+        empty_cells = board.get_empty_cells()
 
         for empty_cell in empty_cells:
             moves.append(empty_cell)
-            new_state = copy.deepcopy(board_state)
+            new_state = copy.deepcopy(board.state)
             self._play_move(new_state, empty_cell)
             next_state_idx = list(states_dict.keys())[
                 list(states_dict.values()).index(new_state)]
 
             curr_state_values.append(self.state_values_for_ai[next_state_idx])
 
+        print(f'Possible moves: {moves}')
+        print(f'Move values {curr_state_values}')
         best_move_idx = np.argmax(curr_state_values)
 
         best_move = moves[best_move_idx]
-        if np.random.uniform(0, 1) <= self.epsilon:
-            self.epsilon *= 0.99
-            return random.choice(empty_cells)
+        if not self.epsilon:
+            if np.random.uniform(0, 1) <= self.epsilon:
+                self.epsilon *= 0.99
+                return random.choice(empty_cells)
 
         return best_move
 
@@ -76,8 +79,9 @@ class AIPlayer:
                                      self.state_values_for_ai[curr_state_idx])
         self.state_values_for_ai[curr_state_idx] = new_value
 
-    def _play_move(self, board_state, block_num):
-        x_coordinate = (block_num - 1) % 3
-        y_coordinate = int((block_num - 1) / 3)
-        if board_state[y_coordinate][x_coordinate] == ' ':
-            board_state[y_coordinate][x_coordinate] = self.symbol
+    def _play_move(self, board_state, cell_num):
+        row = int((cell_num - 1) / 3)
+        col = (cell_num - 1) % 3
+
+        if board_state[row][col] == ' ':
+            board_state[row][col] = self.symbol

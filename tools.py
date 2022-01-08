@@ -1,6 +1,6 @@
 import numpy as np
 
-from common import players
+from common import players, input_board_state
 
 
 def is_player_winner(board, player_symbol):
@@ -38,3 +38,13 @@ def is_game_over(board_state):
 def board_print(board):
     print(f"\n{'|'.join(board[0])}\n{'+'.join('-' * 3)}\n"
           f"{'|'.join(board[1])}\n{'+'.join('-' * 3)}\n{'|'.join(board[2])}\n")
+
+
+def input_board_print():
+    board_print(input_board_state)
+
+
+def save_state_values(state_values_for_ai_x, state_values_for_ai_o):
+    # Save state values for future use
+    np.savetxt('trained_state_values_X.txt', state_values_for_ai_x, fmt='%.6f')
+    np.savetxt('trained_state_values_O.txt', state_values_for_ai_o, fmt='%.6f')

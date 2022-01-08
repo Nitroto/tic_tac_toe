@@ -1,24 +1,18 @@
 import numpy as np
 
-from common import players
+from common import players, PlayerChoices, states_dict
 from generate_initial_data import generate_initial_data
 from models import Board, AIPlayer
-from tools import is_game_over
+from tools import is_game_over, get_winner, save_state_values, \
+    input_board_print
 from training_reinforcement_learning import train
+from user_input import select_symbol, select_first_player, select_next_cell
 
 confirmation_answers = ('y', 'yes')
 
 
-def select_symbol(msg):
-    selected_symbol = input(msg)
-    if selected_symbol not in players:
-        return select_symbol("Selected symbol is not correct please select"
-                             "between X or O: ")
-    return selected_symbol
-
-
 def main():
-    # LOAD TRAINED STATE VALUES
+    # Load trained state values
     try:
         state_values_for_ai_x = np.loadtxt('trained_state_values_X.txt',
                                            dtype=np.float64)
@@ -29,49 +23,64 @@ def main():
 
     train_ai = input("Do you want to run AI train (y/n)? ")
     if train_ai.lower() in confirmation_answers:
-        train(state_values_for_ai_x, state_values_for_ai_o, 10000)
+        train(state_values_for_ai_x, state_values_for_ai_o)
 
     # Computer vs Human Games
     play_game = input("Do you want to play a game? ")
     while play_game in confirmation_answers:
-        human_symbol = select_symbol("Select your symbol (X/O): ")
-
+        human_symbol = select_symbol()
+        computer_symbol = list(
+            filter(lambda s: (s != human_symbol), players))[0]
+        state_values_for_ai = state_values_for_ai_x
+        if computer_symbol != 'O':
+            state_values_for_ai = state_values_for_ai_o
         board = Board()
         game_status_flag = True
-        computer = AIPlayer('X', state_values_for_ai_x, 0.1)
-        game_history = []
-
-        print('\nLet the game begin\n')
+        computer = AIPlayer(computer_symbol, state_values_for_ai, 0)
+        current_player = select_first_player(human_symbol, computer_symbol)
+        first_round = True
+        print('Let the game begin')
         while game_status_flag:
-            board.state = computer.choose_move(board.state, human_symbol)
-            print("Computers\'s Turn:\n")
-            board.print()
-            game_history.append(board.state)
-            game_status_flag = not is_game_over(board.state, computer.symbol)
-            if not game_status_flag:
+            if current_player == PlayerChoices.HUMAN:  # Human input
+                print("Human\'s Turn")
+                if first_round:
+                    first_round = False
+                    input_board_print()
+                cell_choice = select_next_cell(board)
+                board.play_move(human_symbol, cell_choice)
+                current_player = PlayerChoices.COMPUTER
+            elif current_player == PlayerChoices.COMPUTER:
+                curr_state_idx = list(states_dict.keys())[
+                    list(states_dict.values()).index(board.state)]
+                # AI turn
+                print("Computers\'s Turn")
+                ai_move = computer.get_best_move(board)
+                board.play_move(computer.symbol, ai_move)
+                new_state_idx = list(states_dict.keys())[
+                    list(states_dict.values()).index(board.state)]
+                computer.update_state_value(curr_state_idx, new_state_idx,
+                                            learning_rate=0.2)
+                current_player = PlayerChoices.HUMAN
+            else:
+                print("Wrong choice")
                 break
 
-            print("Human\'s Turn:\n")
-            print('Enter X-coordinate(0-2):')
-            x = int(input())
-            print('Enter Y-coordinate(0-2):')
-            y = int(input())
-
-            board.state[y][x] = 'O'
             board.print()
-            game_history.append(board.state)
-            game_status_flag = not is_game_over(board.state, human_symbol)
 
-        final_score = 0
+            game_status_flag = not is_game_over(board.state)
 
-        if final_score > 0:
-            print(f"Computer wins")
-        elif final_score < 0:
-            print("Human wins")
-        else:
-            print("Draw")
+            if not game_status_flag:
+                winner = get_winner(board.state)
+                if winner:
+                    print(f"{winner} won!")
+                    continue
+                print("Draw!")
+                continue
 
         play_game = input("Do you want to play another game(y/n)?")
+
+    print('See you!')
+    save_state_values(state_values_for_ai_x, state_values_for_ai_o)
 
 
 if __name__ == '__main__':
