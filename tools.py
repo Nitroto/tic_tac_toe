@@ -1,6 +1,6 @@
 import numpy as np
 
-from common import players, input_board_state
+from common import players, input_board_state, n_states, states_dict
 
 
 def is_player_winner(board, player_symbol):
@@ -46,5 +46,37 @@ def input_board_print():
 
 def save_state_values(state_values_for_ai_x, state_values_for_ai_o):
     # Save state values for future use
-    np.savetxt('trained_state_values_X.txt', state_values_for_ai_x, fmt='%.6f')
-    np.savetxt('trained_state_values_O.txt', state_values_for_ai_o, fmt='%.6f')
+    np.savetxt('trained_state_values_x.txt', state_values_for_ai_x, fmt='%.6f')
+    np.savetxt('trained_state_values_o.txt', state_values_for_ai_o, fmt='%.6f')
+
+
+def generate_initial_data():
+    # Initialize state values
+    state_values_x = np.full(n_states, 0.0)
+    state_values_o = np.full(n_states, 0.0)
+    for i in range(n_states):
+        winner = get_winner(states_dict[i])
+        if winner == 'X':
+            state_values_x[i] = 1
+            state_values_o[i] = -1
+        elif winner == 'O':
+            state_values_x[i] = -1
+            state_values_o[i] = 1
+
+    save_state_values(state_values_x, state_values_o)
+
+    return state_values_x, state_values_o
+
+
+def load_trained_state_values():
+    # Load trained state values
+    try:
+        state_values_x = np.loadtxt('trained_state_values_x.txt',
+                                    dtype=np.float64)
+        state_values_o = np.loadtxt('trained_state_values_o.txt',
+                                    dtype=np.float64)
+    except FileNotFoundError:
+        # If files are missing generate new initial ones
+        return generate_initial_data()
+
+    return state_values_x, state_values_o

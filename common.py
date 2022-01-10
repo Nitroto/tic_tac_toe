@@ -11,6 +11,8 @@ all_possible_states = [[list(i[0:3]), list(i[3:6]), list(i[6:10])] for i in
                        itertools.product(possible_symbols, repeat=n_actions)]
 states_dict = {index: x for index, x in enumerate(all_possible_states)}
 n_states = len(all_possible_states)
+EPSILON = 0.2
+LEARNING_RATE = 0.2
 
 
 class PlayerChoices(Enum):

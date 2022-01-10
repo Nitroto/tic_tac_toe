@@ -12,7 +12,7 @@ def select_symbol():
 def select_first_player(human_symbol, computer_symbol):
     player_choice = input(f"Choose which player goes first\n"
                           f"{human_symbol} - You\n"
-                          f"{computer_symbol} - Computer").upper()
+                          f"{computer_symbol} - Computer\n").upper()
 
     if player_choice == human_symbol:
         return PlayerChoices.HUMAN

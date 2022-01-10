@@ -1,10 +1,7 @@
-import numpy as np
-
 from common import players, PlayerChoices, states_dict
-from generate_initial_data import generate_initial_data
 from models import Board, AIPlayer
 from tools import is_game_over, get_winner, save_state_values, \
-    input_board_print
+    input_board_print, load_trained_state_values
 from training_reinforcement_learning import train
 from user_input import select_symbol, select_first_player, select_next_cell
 
@@ -12,35 +9,29 @@ confirmation_answers = ('y', 'yes')
 
 
 def main():
-    # Load trained state values
-    try:
-        state_values_for_ai_x = np.loadtxt('trained_state_values_X.txt',
-                                           dtype=np.float64)
-        state_values_for_ai_o = np.loadtxt('trained_state_values_O.txt',
-                                           dtype=np.float64)
-    except FileNotFoundError:
-        state_values_for_ai_x, state_values_for_ai_o = generate_initial_data()
-
+    state_values_x, state_values_o = load_trained_state_values()
     train_ai = input("Do you want to run AI train (y/n)? ")
     if train_ai.lower() in confirmation_answers:
-        train(state_values_for_ai_x, state_values_for_ai_o)
+        state_values_x, state_values_o = train(state_values_x, state_values_o,
+                                               num_iterations=20000)
+        save_state_values(state_values_x, state_values_o)
 
-    # Computer vs Human Games
-    play_game = input("Do you want to play a game? ")
+    # Computer vs Human
+    play_game = input("Do you want to play a game (y/n)? ")
     while play_game in confirmation_answers:
         human_symbol = select_symbol()
         computer_symbol = list(
             filter(lambda s: (s != human_symbol), players))[0]
-        state_values_for_ai = state_values_for_ai_x
-        if computer_symbol != 'O':
-            state_values_for_ai = state_values_for_ai_o
+        state_values = state_values_x
+        if computer_symbol == 'O':
+            state_values = state_values_o
         board = Board()
-        game_status_flag = True
-        computer = AIPlayer(computer_symbol, state_values_for_ai, 0)
+        is_running = True
+        computer = AIPlayer(computer_symbol, state_values, epsilon=0)
         current_player = select_first_player(human_symbol, computer_symbol)
         first_round = True
         print('Let the game begin')
-        while game_status_flag:
+        while is_running:
             if current_player == PlayerChoices.HUMAN:  # Human input
                 print("Human\'s Turn")
                 if first_round:
@@ -58,8 +49,7 @@ def main():
                 board.play_move(computer.symbol, ai_move)
                 new_state_idx = list(states_dict.keys())[
                     list(states_dict.values()).index(board.state)]
-                computer.update_state_value(curr_state_idx, new_state_idx,
-                                            learning_rate=0.2)
+                computer.update_state_value(curr_state_idx, new_state_idx)
                 current_player = PlayerChoices.HUMAN
             else:
                 print("Wrong choice")
@@ -67,9 +57,9 @@ def main():
 
             board.print()
 
-            game_status_flag = not is_game_over(board.state)
+            is_running = not is_game_over(board.state)
 
-            if not game_status_flag:
+            if not is_running:
                 winner = get_winner(board.state)
                 if winner:
                     print(f"{winner} won!")
@@ -77,10 +67,10 @@ def main():
                 print("Draw!")
                 continue
 
-        play_game = input("Do you want to play another game(y/n)?")
+        play_game = input("Do you want to play one more game (y/n)? ")
 
     print('See you!')
-    save_state_values(state_values_for_ai_x, state_values_for_ai_o)
+    save_state_values(state_values_x, state_values_o)
 
 
 if __name__ == '__main__':

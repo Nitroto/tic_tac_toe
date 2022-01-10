@@ -3,7 +3,7 @@ import random
 
 import numpy as np
 
-from common import empty_board_state, states_dict
+from common import empty_board_state, states_dict, EPSILON, LEARNING_RATE
 
 
 class Board:
@@ -39,10 +39,13 @@ class Board:
 class AIPlayer:
     """ Provides all the methods that a AIPlayer must execute. """
 
-    def __init__(self, symbol, state_values_for_ai, epsilon=0.2):
+    def __init__(self, symbol, trained_state_values, epsilon=EPSILON,
+                 learning_rate=LEARNING_RATE):
         self.symbol = symbol
-        self.state_values_for_ai = state_values_for_ai
+        self.trained_state_values = trained_state_values
         self.epsilon = epsilon
+        self.current_epsilon = epsilon
+        self.learning_rate = learning_rate
 
     def get_best_move(self, board):
         """ Reinforcement Learning Algorithm """
@@ -54,32 +57,33 @@ class AIPlayer:
         for empty_cell in empty_cells:
             moves.append(empty_cell)
             new_state = copy.deepcopy(board.state)
-            self._play_move(new_state, empty_cell)
+            self._generate_possible_move(new_state, empty_cell)
             next_state_idx = list(states_dict.keys())[
                 list(states_dict.values()).index(new_state)]
 
-            curr_state_values.append(self.state_values_for_ai[next_state_idx])
+            curr_state_values.append(self.trained_state_values[next_state_idx])
 
         print(f'Possible moves: {moves}')
         print(f'Move values {curr_state_values}')
         best_move_idx = np.argmax(curr_state_values)
 
         best_move = moves[best_move_idx]
-        if not self.epsilon:
-            if np.random.uniform(0, 1) <= self.epsilon:
-                self.epsilon *= 0.99
+        if self.epsilon:
+            if np.random.uniform(0, 1) <= self.current_epsilon:
+                self.current_epsilon *= 0.99
                 return random.choice(empty_cells)
+            self.current_epsilon = self.epsilon
 
         return best_move
 
-    def update_state_value(self, curr_state_idx, next_state_idx,
-                           learning_rate):
-        new_value = self.state_values_for_ai[curr_state_idx] + \
-                    learning_rate * (self.state_values_for_ai[next_state_idx] -
-                                     self.state_values_for_ai[curr_state_idx])
-        self.state_values_for_ai[curr_state_idx] = new_value
+    def update_state_value(self, curr_state_idx, next_state_idx):
+        new_value = self.trained_state_values[curr_state_idx] + \
+                    self.learning_rate * \
+                    (self.trained_state_values[next_state_idx] -
+                     self.trained_state_values[curr_state_idx])
+        self.trained_state_values[curr_state_idx] = new_value
 
-    def _play_move(self, board_state, cell_num):
+    def _generate_possible_move(self, board_state, cell_num):
         row = int((cell_num - 1) / 3)
         col = (cell_num - 1) % 3
 
